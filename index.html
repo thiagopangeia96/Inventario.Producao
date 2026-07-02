@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Pangeia · Inventário</title>
+<style>
+:root{
+  --roxo:#592C95;--roxo-esc:#3D1B6B;--roxo-cl:#AE76E5;
+  --lav:#E4D4F9;--lav-l:#F5EEFB;--amarelo:#FFD23F;
+  --txt:#2A1655;--txt-s:#6B5B8E;--brd:#D9C7F0;
+  --ok:#0F6E56;--ok-bg:#dcfce7;--ok-txt:#166534;
+  --warn:#854F0B;--warn-bg:#fef3c7;--warn-txt:#854d0e;
+  --bad:#A32D2D;--bad-bg:#fee2e2;--bad-txt:#991b1b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--lav-l);color:var(--txt);min-height:100vh;}
+
+.topbar{background:linear-gradient(135deg,var(--roxo),var(--roxo-esc));padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:100;}
+.topbar h1{font-size:16px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;}
+.brand{background:var(--amarelo);color:var(--roxo-esc);padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;}
+
+.menu{display:flex;background:#fff;border-bottom:2px solid var(--lav);position:sticky;top:50px;z-index:99;}
+.menu-btn{flex:1;padding:12px 8px;text-align:center;font-size:12px;font-weight:700;color:var(--txt-s);border:none;background:transparent;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;}
+.menu-btn.active{color:var(--roxo);border-bottom-color:var(--roxo);background:var(--lav-l);}
+.menu-btn .icon{font-size:18px;display:block;margin-bottom:2px;}
+.tab-content{display:none;padding:16px;max-width:800px;margin:0 auto;}
+.tab-content.active{display:block;}
+
+.card{background:#fff;border-radius:14px;border:1px solid var(--brd);padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(89,44,149,.06);}
+.card-title{font-size:12px;font-weight:800;color:var(--roxo);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;}
+
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;padding:11px 14px;border:1.5px solid var(--brd);border-radius:10px;font-size:14px;font-family:inherit;outline:none;color:var(--txt);background:#fff;transition:border-color .15s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--roxo);}
+
+.tipo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px;}
+.tipo-btn{padding:14px 8px;border-radius:12px;border:2px solid var(--brd);background:#fff;cursor:pointer;text-align:center;transition:all .2s;font-size:11px;font-weight:700;color:var(--txt-s);}
+.tipo-btn .tipo-icon{font-size:24px;display:block;margin-bottom:4px;}
+.tipo-btn.selected{border-color:var(--roxo);background:var(--lav-l);color:var(--roxo);}
+
+.qtd-box{background:var(--lav-l);border-radius:12px;padding:14px;text-align:center;}
+.qtd-box label{display:block;font-size:11px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+.qtd-input{width:100%;padding:14px;border:2px solid var(--brd);border-radius:10px;font-size:28px;font-weight:800;text-align:center;color:var(--txt);outline:none;background:#fff;}
+.qtd-input:focus{border-color:var(--roxo);}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:13px 20px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .15s;width:100%;justify-content:center;margin-top:4px;}
+.btn-primary{background:linear-gradient(135deg,var(--roxo),var(--roxo-esc));color:#fff;box-shadow:0 4px 14px rgba(89,44,149,.3);}
+.btn-primary:hover{transform:translateY(-1px);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-secondary{background:#fff;color:var(--roxo);border:1.5px solid var(--roxo);}
+.btn-sm{padding:7px 14px;font-size:12px;width:auto;}
+
+.registro-item{background:var(--lav-l);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.registro-desc{font-size:12px;color:var(--txt);}
+.registro-desc strong{display:block;font-size:13px;}
+.registro-qtd{background:var(--roxo);color:#fff;padding:4px 12px;border-radius:8px;font-weight:800;font-size:13px;white-space:nowrap;}
+.registro-tipo{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;display:inline-block;margin-top:3px;}
+.tipo-acab{background:#dbeafe;color:#1e40af;}
+.tipo-rev{background:var(--ok-bg);color:var(--ok-txt);}
+.tipo-cont{background:var(--lav);color:var(--roxo);}
+
+.empty{text-align:center;padding:40px 20px;color:var(--txt-s);}
+.empty .empty-icon{font-size:48px;margin-bottom:12px;}
+
+.resumo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.resumo-card{background:#fff;border-radius:12px;border:1px solid var(--brd);padding:12px;text-align:center;}
+.resumo-card .r-val{font-size:22px;font-weight:800;color:var(--roxo);}
+.resumo-card .r-lbl{font-size:10px;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;margin-top:2px;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e1b4b;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;max-width:320px;text-align:center;}
+.toast.show{opacity:1;}
+
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-ok{background:var(--ok-bg);color:var(--ok-txt);}
+.badge-err{background:var(--bad-bg);color:var(--bad-txt);}
+
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>📦 Pangeia <span class="brand">INVENTÁRIO</span></h1>
+  <div id="statusConn" class="status-badge badge-err">⚡ Conectando...</div>
+</div>
+
+<nav class="menu">
+  <button class="menu-btn active" onclick="mudarAba('lancar')" id="btn-lancar">
+    <span class="icon">📝</span>Lançar
+  </button>
+  <button class="menu-btn" onclick="mudarAba('historico')" id="btn-historico">
+    <span class="icon">📋</span>Histórico
+  </button>
+  <button class="menu-btn" onclick="mudarAba('resumo')" id="btn-resumo">
+    <span class="icon">📊</span>Resumo
+  </button>
+</nav>
+
+<!-- ═══════════════ ABA LANÇAR ═══════════════ -->
+<div class="tab-content active" id="tab-lancar">
+
+  <div class="card">
+    <div class="card-title">Tipo de Contagem</div>
+    <div class="tipo-grid">
+      <button class="tipo-btn" onclick="selecionarTipo('Estoque Acab.')" id="tipo-Estoque Acab.">
+        <span class="tipo-icon">📦</span>Estoque Acab.
+      </button>
+      <button class="tipo-btn" onclick="selecionarTipo('Revisão')" id="tipo-Revisão">
+        <span class="tipo-icon">🔍</span>Revisão
+      </button>
+      <button class="tipo-btn" onclick="selecionarTipo('Contagem')" id="tipo-Contagem">
+        <span class="tipo-icon">🔢</span>Contagem
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Identificação</div>
+    <div class="field">
+      <label>Número da O.S.</label>
+      <input type="text" id="inp-os" placeholder="Ex: 1856" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label>Facção</label>
+      <input type="text" id="inp-faccao" placeholder="Ex: CKL, MAXIONY..." list="lista-faccoes" autocomplete="off">
+      <datalist id="lista-faccoes"></datalist>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Produto</div>
+    <div class="field">
+      <label>Modelo</label>
+      <select id="sel-modelo" onchange="onSelectModelo(this)" style="width:100%;padding:11px 14px;border:1.5px solid var(--brd);border-radius:10px;font-size:14px;font-family:inherit;outline:none;color:var(--txt);background:#fff;">
+        <option value="">— selecione —</option>
+      </select>
+      <input type="text" id="inp-modelo" placeholder="Digite o modelo manualmente..." style="display:none;margin-top:6px;" autocomplete="off">
+      <button type="button" onclick="toggleManualModelo()" id="btn-manual-modelo" style="margin-top:6px;background:none;border:none;color:var(--roxo);font-size:11px;font-weight:700;cursor:pointer;padding:0;">+ Não encontrei na lista, digitar manualmente</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="field">
+        <label>Cor</label>
+        <select id="sel-cor" onchange="onSelectCor(this)" style="width:100%;padding:11px 14px;border:1.5px solid var(--brd);border-radius:10px;font-size:14px;font-family:inherit;outline:none;color:var(--txt);background:#fff;">
+          <option value="">— selecione —</option>
+        </select>
+        <input type="text" id="inp-cor" placeholder="Digite a cor manualmente..." style="display:none;margin-top:6px;" autocomplete="off">
+        <button type="button" onclick="toggleManualCor()" id="btn-manual-cor" style="margin-top:6px;background:none;border:none;color:var(--roxo);font-size:11px;font-weight:700;cursor:pointer;padding:0;">+ Não encontrei na lista, digitar manualmente</button>
+      </div>
+      <div class="field">
+        <label>Tamanho</label>
+        <input type="text" id="inp-tam" placeholder="P, M, G, 38..." list="lista-tamanhos" autocomplete="off">
+        <datalist id="lista-tamanhos">
+          <option value="PP">
+          <option value="P">
+          <option value="M">
+          <option value="G">
+          <option value="GG">
+          <option value="XGG">
+          <option value="32">
+          <option value="34">
+          <option value="36">
+          <option value="38">
+          <option value="40">
+          <option value="42">
+          <option value="UNICO">
+        </datalist>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Quantidade</div>
+    <div class="qtd-box">
+      <label>Total de peças em bom estado</label>
+      <input class="qtd-input" type="number" id="inp-qtd" placeholder="0" min="0" inputmode="numeric">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Observações <span style="font-size:10px;font-weight:400;color:var(--txt-s)">(opcional)</span></div>
+    <div class="field">
+      <textarea id="inp-obs" rows="2" placeholder="Alguma observação sobre essa contagem..."></textarea>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="btn-registrar" onclick="registrar()">
+    Registrar Contagem
+  </button>
+</div>
+
+<!-- ═══════════════ ABA HISTÓRICO ═══════════════ -->
+<div class="tab-content" id="tab-historico">
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between;display:flex;">
+      <span>Lançamentos desta sessão</span>
+      <button class="btn btn-secondary btn-sm" onclick="limparHistorico()">Limpar</button>
+    </div>
+    <div id="lista-historico">
+      <div class="empty">
+        <div class="empty-icon">📋</div>
+        <p>Nenhum lançamento ainda</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ ABA RESUMO ═══════════════ -->
+<div class="tab-content" id="tab-resumo">
+  <div class="resumo-grid">
+    <div class="resumo-card">
+      <div class="r-val" id="res-total">0</div>
+      <div class="r-lbl">Total lançamentos</div>
+    </div>
+    <div class="resumo-card">
+      <div class="r-val" id="res-pecas">0</div>
+      <div class="r-lbl">Total peças</div>
+    </div>
+    <div class="resumo-card">
+      <div class="r-val" id="res-os">0</div>
+      <div class="r-lbl">O.S. distintas</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Por tipo de contagem</div>
+    <div id="res-por-tipo"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Por modelo</div>
+    <div id="res-por-modelo"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyp9eI0RTJrR-IDOtB1bOBpyVPy0BloUY-RdT_KbEuBRim4vlB2g5m0swuMzXf8yn2n/exec';
+
+var tipoSelecionado = '';
+var historico = [];
+
+// ─── INIT ──────────────────────────────────────────────────
+window.addEventListener('load', function(){
+  carregarListas();
+});
+
+function carregarListas(){
+  fetch(SCRIPT_URL + '?action=listas&t=' + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      popularSelect('sel-modelo', d.modelos || []);
+      popularSelect('sel-cor',    d.cores   || []);
+      popularDatalist('lista-faccoes', d.faccoes || []);
+      document.getElementById('statusConn').className = 'status-badge badge-ok';
+      document.getElementById('statusConn').textContent = '✅ Conectado';
+    })
+    .catch(function(){
+      document.getElementById('statusConn').className = 'status-badge badge-err';
+      document.getElementById('statusConn').textContent = '⚠️ Offline';
+    });
+}
+
+function popularSelect(id, arr){
+  var sel = document.getElementById(id);
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— selecione —</option>' +
+    arr.map(function(v){ return '<option value="'+v+'">'+v+'</option>'; }).join('');
+}
+
+function popularDatalist(id, arr){
+  var dl = document.getElementById(id);
+  if(!dl) return;
+  dl.innerHTML = arr.map(function(v){ return '<option value="' + v + '">'; }).join('');
+}
+
+var manualModelo = false, manualCor = false;
+
+function onSelectModelo(sel){
+  document.getElementById('inp-modelo').value = sel.value;
+}
+function onSelectCor(sel){
+  document.getElementById('inp-cor').value = sel.value;
+}
+function toggleManualModelo(){
+  manualModelo = !manualModelo;
+  var inp = document.getElementById('inp-modelo');
+  var sel = document.getElementById('sel-modelo');
+  var btn = document.getElementById('btn-manual-modelo');
+  inp.style.display = manualModelo ? '' : 'none';
+  sel.style.display = manualModelo ? 'none' : '';
+  btn.textContent = manualModelo ? '← Voltar para a lista' : '+ Não encontrei na lista, digitar manualmente';
+  if(manualModelo){ inp.focus(); inp.value=''; }
+  else { inp.value = sel.value; }
+}
+function toggleManualCor(){
+  manualCor = !manualCor;
+  var inp = document.getElementById('inp-cor');
+  var sel = document.getElementById('sel-cor');
+  var btn = document.getElementById('btn-manual-cor');
+  inp.style.display = manualCor ? '' : 'none';
+  sel.style.display = manualCor ? 'none' : '';
+  btn.textContent = manualCor ? '← Voltar para a lista' : '+ Não encontrei na lista, digitar manualmente';
+  if(manualCor){ inp.focus(); inp.value=''; }
+  else { inp.value = sel.value; }
+}
+
+// ─── TIPO ──────────────────────────────────────────────────
+function selecionarTipo(tipo){
+  tipoSelecionado = tipo;
+  ['Estoque Acab.','Revisão','Contagem'].forEach(function(t){
+    var el = document.getElementById('tipo-' + t);
+    if(el) el.classList.toggle('selected', t === tipo);
+  });
+}
+
+// ─── ABAS ──────────────────────────────────────────────────
+function mudarAba(aba){
+  document.querySelectorAll('.tab-content').forEach(function(el){ el.classList.remove('active'); });
+  document.querySelectorAll('.menu-btn').forEach(function(el){ el.classList.remove('active'); });
+  document.getElementById('tab-' + aba).classList.add('active');
+  document.getElementById('btn-' + aba).classList.add('active');
+  if(aba === 'resumo') atualizarResumo();
+}
+
+// ─── REGISTRAR ─────────────────────────────────────────────
+function registrar(){
+  if(!tipoSelecionado){ toast('⚠️ Selecione o tipo de contagem'); return; }
+  var os     = document.getElementById('inp-os').value.trim();
+  var faccao = document.getElementById('inp-faccao').value.trim();
+  var modelo = (manualModelo ? document.getElementById('inp-modelo') : document.getElementById('sel-modelo')).value.trim();
+  var cor    = (manualCor ? document.getElementById('inp-cor') : document.getElementById('sel-cor')).value.trim();
+  var tam    = document.getElementById('inp-tam').value.trim();
+  var qtd    = parseInt(document.getElementById('inp-qtd').value) || 0;
+  var obs    = document.getElementById('inp-obs').value.trim();
+
+  if(!modelo){ toast('⚠️ Informe o modelo'); return; }
+  if(!tam){ toast('⚠️ Informe o tamanho'); return; }
+  if(qtd <= 0){ toast('⚠️ Informe a quantidade'); return; }
+
+  var btn = document.getElementById('btn-registrar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Registrando...';
+
+  var payload = {
+    tipo: tipoSelecionado,
+    os: os,
+    faccao: faccao,
+    modelo: modelo,
+    cor: cor,
+    tamanho: tam,
+    quantidade: qtd,
+    obs: obs
+  };
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok){
+      historico.unshift(payload);
+      salvarHistoricoLocal();
+      renderHistorico();
+      toast('✅ Registrado com sucesso!');
+      limparFormulario();
+    } else {
+      toast('❌ Erro: ' + (d.erro || 'tente novamente'));
+    }
+  })
+  .catch(function(){
+    toast('❌ Erro de conexão');
+  })
+  .finally(function(){
+    btn.disabled = false;
+    btn.innerHTML = 'Registrar Contagem';
+  });
+}
+
+// ─── FORMULÁRIO ────────────────────────────────────────────
+function limparFormulario(){
+  ['inp-os','inp-tam','inp-obs','inp-modelo','inp-cor'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('inp-qtd').value = '';
+  // Reset selects
+  var sm = document.getElementById('sel-modelo'); if(sm) sm.value='';
+  var sc = document.getElementById('sel-cor'); if(sc) sc.value='';
+  // Mantém tipo, facção e OS para agilizar lançamentos sequenciais
+}
+
+// ─── HISTÓRICO ─────────────────────────────────────────────
+function renderHistorico(){
+  var el = document.getElementById('lista-historico');
+  if(!historico.length){
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>Nenhum lançamento ainda</p></div>';
+    return;
+  }
+  el.innerHTML = historico.map(function(r){
+    var tipoClass = r.tipo === 'Estoque Acab.' ? 'tipo-acab' : r.tipo === 'Revisão' ? 'tipo-rev' : 'tipo-cont';
+    return '<div class="registro-item">' +
+      '<div class="registro-desc">' +
+        '<strong>' + r.modelo + (r.cor ? ' · ' + r.cor : '') + ' · ' + r.tamanho + '</strong>' +
+        (r.os ? 'OS ' + r.os + (r.faccao ? ' · ' + r.faccao : '') : (r.faccao || '')) +
+        '<span class="registro-tipo ' + tipoClass + '">' + r.tipo + '</span>' +
+      '</div>' +
+      '<span class="registro-qtd">' + r.quantidade + ' pç</span>' +
+      '</div>';
+  }).join('');
+}
+
+function salvarHistoricoLocal(){
+  try{ localStorage.setItem('inv_hist', JSON.stringify(historico.slice(0,100))); }catch(e){}
+}
+
+function limparHistorico(){
+  if(!confirm('Limpar o histórico desta sessão?')) return;
+  historico = [];
+  try{ localStorage.removeItem('inv_hist'); }catch(e){}
+  renderHistorico();
+  toast('Histórico limpo');
+}
+
+// ─── RESUMO ────────────────────────────────────────────────
+function atualizarResumo(){
+  var total = historico.length;
+  var pecas = historico.reduce(function(s,r){ return s + (r.quantidade||0); }, 0);
+  var osSet = new Set(historico.map(function(r){ return r.os; }).filter(Boolean));
+
+  document.getElementById('res-total').textContent = total;
+  document.getElementById('res-pecas').textContent = pecas.toLocaleString('pt-BR');
+  document.getElementById('res-os').textContent = osSet.size;
+
+  // Por tipo
+  var porTipo = {};
+  historico.forEach(function(r){
+    if(!porTipo[r.tipo]) porTipo[r.tipo] = {count:0, pecas:0};
+    porTipo[r.tipo].count++;
+    porTipo[r.tipo].pecas += (r.quantidade||0);
+  });
+  var tipoHTML = Object.keys(porTipo).map(function(t){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--lav-l);font-size:13px;">' +
+      '<span style="font-weight:700;">' + t + '</span>' +
+      '<span>' + porTipo[t].count + ' lançamentos · ' + porTipo[t].pecas.toLocaleString('pt-BR') + ' peças</span>' +
+      '</div>';
+  }).join('');
+  document.getElementById('res-por-tipo').innerHTML = tipoHTML || '<p style="color:var(--txt-s);font-size:13px;">Sem dados</p>';
+
+  // Por modelo
+  var porMod = {};
+  historico.forEach(function(r){
+    var k = r.modelo || '?';
+    if(!porMod[k]) porMod[k] = 0;
+    porMod[k] += (r.quantidade||0);
+  });
+  var modArr = Object.keys(porMod).sort(function(a,b){ return porMod[b]-porMod[a]; });
+  var modHTML = modArr.map(function(k){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--lav-l);font-size:13px;">' +
+      '<span style="font-weight:700;">' + k + '</span>' +
+      '<span style="background:var(--lav);color:var(--roxo);padding:2px 10px;border-radius:8px;font-weight:700;">' + porMod[k].toLocaleString('pt-BR') + ' pç</span>' +
+      '</div>';
+  }).join('');
+  document.getElementById('res-por-modelo').innerHTML = modHTML || '<p style="color:var(--txt-s);font-size:13px;">Sem dados</p>';
+}
+
+// ─── TOAST ─────────────────────────────────────────────────
+function toast(msg){
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, 3000);
+}
+
+// ─── RESTORE HISTÓRICO LOCAL ───────────────────────────────
+try{
+  var h = localStorage.getItem('inv_hist');
+  if(h){ historico = JSON.parse(h) || []; renderHistorico(); }
+}catch(e){}
+</script>
+</body>
+</html>
