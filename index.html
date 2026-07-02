@@ -307,7 +307,9 @@ function mostrarErroLogin(msg){
 
 // ─── INIT ──────────────────────────────────────────────────
 window.addEventListener('load', function(){
-  // App inicia na tela de login, não carrega listas ainda
+  // Garante que a tela de login aparece sempre ao abrir/atualizar
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('login-usuario').focus();
 });
 
 function carregarListas(){
