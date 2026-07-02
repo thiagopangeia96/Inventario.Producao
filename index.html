@@ -1,3 +1,24 @@
+<!-- TELA DE LOGIN -->
+<div id="login-overlay" style="position:fixed;inset:0;background:var(--lav-l);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:20px;border:1px solid var(--brd);padding:28px 24px;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(89,44,149,.15);">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:40px;margin-bottom:8px;">📦</div>
+      <div style="font-size:20px;font-weight:800;color:var(--roxo);">Pangeia · Inventário</div>
+      <div style="font-size:12px;color:var(--txt-s);margin-top:4px;">Faça login para continuar</div>
+    </div>
+    <div class="field">
+      <label>Usuário</label>
+      <input type="text" id="login-usuario" placeholder="Seu nome de usuário" autocomplete="username" style="font-size:15px;">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="login-senha" placeholder="Sua senha" autocomplete="current-password" style="font-size:15px;" onkeydown="if(event.key==='Enter') fazerLogin()">
+    </div>
+    <div id="login-erro" style="display:none;background:var(--bad-bg);color:var(--bad-txt);border-radius:8px;padding:10px 12px;font-size:12px;font-weight:700;margin-bottom:12px;"></div>
+    <button class="btn btn-primary" id="btn-login" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -88,7 +109,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--lav-l);col
 
 <div class="topbar">
   <h1>📦 Pangeia <span class="brand">INVENTÁRIO</span></h1>
-  <div id="statusConn" class="status-badge badge-err">⚡ Conectando...</div>
+  <span id="topbar-nome" style="font-size:11px;color:rgba(255,255,255,.8);font-weight:600;"></span><div id="statusConn" class="status-badge badge-err">⚡ Conectando...</div>
 </div>
 
 <nav class="menu">
@@ -108,7 +129,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--lav-l);col
 
   <div class="card">
     <div class="card-title">Tipo de Contagem</div>
-    <div class="tipo-grid">
+    <div class="tipo-grid" style="grid-template-columns:repeat(2,1fr);">
       <button class="tipo-btn" onclick="selecionarTipo('Estoque Acab.')" id="tipo-Estoque Acab.">
         <span class="tipo-icon">📦</span>Estoque Acab.
       </button>
@@ -117,6 +138,9 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--lav-l);col
       </button>
       <button class="tipo-btn" onclick="selecionarTipo('Contagem')" id="tipo-Contagem">
         <span class="tipo-icon">🔢</span>Contagem
+      </button>
+      <button class="tipo-btn" onclick="selecionarTipo('Facção')" id="tipo-Facção">
+        <span class="tipo-icon">🏭</span>Facção
       </button>
     </div>
   </div>
@@ -201,15 +225,12 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--lav-l);col
 <!-- ═══════════════ ABA HISTÓRICO ═══════════════ -->
 <div class="tab-content" id="tab-historico">
   <div class="card">
-    <div class="card-title" style="justify-content:space-between;display:flex;">
-      <span>Lançamentos desta sessão</span>
-      <button class="btn btn-secondary btn-sm" onclick="limparHistorico()">Limpar</button>
+    <div class="card-title" style="justify-content:space-between;display:flex;align-items:center;">
+      <span>📋 Lançamentos — todos os colaboradores</span>
+      <button class="btn btn-secondary btn-sm" onclick="carregarHistorico()">↺ Atualizar</button>
     </div>
     <div id="lista-historico">
-      <div class="empty">
-        <div class="empty-icon">📋</div>
-        <p>Nenhum lançamento ainda</p>
-      </div>
+      <div class="empty"><div class="empty-icon">📋</div><p>Carregando...</p></div>
     </div>
   </div>
 </div>
@@ -250,10 +271,43 @@ var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyp9eI0RTJrR-IDOtB1bOB
 
 var tipoSelecionado = '';
 var historico = [];
+var usuarioLogado = '';
+
+// ─── LOGIN ─────────────────────────────────────────────────
+function fazerLogin(){
+  var usuario = (document.getElementById('login-usuario').value || '').trim();
+  var senha   = (document.getElementById('login-senha').value || '').trim();
+  if(!usuario || !senha){ mostrarErroLogin('Preencha usuário e senha'); return; }
+  var btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Verificando...';
+  fetch(SCRIPT_URL + '?action=login&usuario=' + encodeURIComponent(usuario) + '&senha=' + encodeURIComponent(senha))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.ok){
+        usuarioLogado = d.nome;
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('topbar-nome').textContent = '👤 ' + d.nome;
+        carregarListas();
+      } else {
+        mostrarErroLogin(d.erro || 'Usuário ou senha incorretos');
+        btn.disabled = false; btn.innerHTML = 'Entrar';
+      }
+    })
+    .catch(function(){
+      mostrarErroLogin('Erro de conexão. Verifique a internet.');
+      btn.disabled = false; btn.innerHTML = 'Entrar';
+    });
+}
+
+function mostrarErroLogin(msg){
+  var el = document.getElementById('login-erro');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
 
 // ─── INIT ──────────────────────────────────────────────────
 window.addEventListener('load', function(){
-  carregarListas();
+  // App inicia na tela de login, não carrega listas ainda
 });
 
 function carregarListas(){
@@ -333,6 +387,27 @@ function toggleManualCor(){
 }
 
 // ─── TIPO ──────────────────────────────────────────────────
+// Salva novo item (modelo/cor/facção) na planilha ⚙️ LISTAS
+function salvarNaLista(campo, valor){
+  if(!valor) return;
+  // Evita duplicar se já está no select
+  var selId = campo === 'modelo' ? 'sel-modelo' : campo === 'cor' ? 'sel-cor' : 'sel-faccao';
+  var sel = document.getElementById(selId);
+  if(sel){
+    var opts = Array.from(sel.options).map(function(o){ return o.value.toUpperCase().trim(); });
+    if(opts.indexOf(valor.toUpperCase().trim()) >= 0) return; // já existe
+    // Adiciona no select para próximos usos nesta sessão
+    var opt = document.createElement('option');
+    opt.value = valor; opt.textContent = valor;
+    sel.appendChild(opt);
+  }
+  // Envia para o script salvar na planilha
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ acao: 'addLista', campo: campo, valor: valor })
+  }).catch(function(){}); // silencioso, não bloqueia o fluxo
+}
+
 function selecionarTam(tam){
   document.getElementById('inp-tam').value = tam;
   document.querySelectorAll('.tam-btn').forEach(function(b){
@@ -342,7 +417,7 @@ function selecionarTam(tam){
 
 function selecionarTipo(tipo){
   tipoSelecionado = tipo;
-  ['Estoque Acab.','Revisão','Contagem'].forEach(function(t){
+  ['Estoque Acab.','Revisão','Contagem','Facção'].forEach(function(t){
     var el = document.getElementById('tipo-' + t);
     if(el) el.classList.toggle('selected', t === tipo);
   });
@@ -368,15 +443,25 @@ function registrar(){
   var qtd    = parseInt(document.getElementById('inp-qtd').value) || 0;
   var obs    = document.getElementById('inp-obs').value.trim();
 
-  if(!modelo){ toast('⚠️ Informe o modelo'); return; }
-  if(!tam){ toast('⚠️ Informe o tamanho'); return; }
-  if(qtd <= 0){ toast('⚠️ Informe a quantidade'); return; }
+  var erros = [];
+  if(!tipoSelecionado) erros.push('tipo de contagem');
+  if(!os)      erros.push('número da O.S.');
+  if(!faccao)  erros.push('facção');
+  if(!modelo)  erros.push('modelo');
+  if(!cor)     erros.push('cor');
+  if(!tam)     erros.push('tamanho');
+  if(qtd <= 0) erros.push('quantidade');
+  if(erros.length){
+    toast('⚠️ Preencha: ' + erros.join(', '));
+    return;
+  }
 
   var btn = document.getElementById('btn-registrar');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Registrando...';
 
   var payload = {
+    colaborador: usuarioLogado,
     tipo: tipoSelecionado,
     os: os,
     faccao: faccao,
@@ -394,6 +479,10 @@ function registrar(){
   .then(function(r){ return r.json(); })
   .then(function(d){
     if(d.ok){
+      // Salva novos itens digitados manualmente na aba ⚙️ LISTAS
+      if(manualModelo && modelo) salvarNaLista('modelo', modelo);
+      if(manualCor    && cor)    salvarNaLista('cor',    cor);
+      if(manualFaccao && faccao) salvarNaLista('faccao', faccao);
       historico.unshift(payload);
       salvarHistoricoLocal();
       renderHistorico();
@@ -439,7 +528,7 @@ function renderHistorico(){
     var tipoClass = r.tipo === 'Estoque Acab.' ? 'tipo-acab' : r.tipo === 'Revisão' ? 'tipo-rev' : 'tipo-cont';
     return '<div class="registro-item">' +
       '<div class="registro-desc">' +
-        '<strong>' + r.modelo + (r.cor ? ' · ' + r.cor : '') + ' · ' + r.tamanho + '</strong>' +
+        '<strong>' + r.modelo + (r.cor ? ' · ' + r.cor : '') + ' · ' + r.tamanho + '</strong>' + (r.colaborador ? '<span style="font-size:10px;color:var(--roxo);font-weight:700;"> 👤 ' + r.colaborador + '</span>' : '') +
         (r.os ? 'OS ' + r.os + (r.faccao ? ' · ' + r.faccao : '') : (r.faccao || '')) +
         '<span class="registro-tipo ' + tipoClass + '">' + r.tipo + '</span>' +
       '</div>' +
