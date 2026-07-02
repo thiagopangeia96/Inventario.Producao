@@ -76,6 +76,10 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--lav-l);col
 .badge-ok{background:var(--ok-bg);color:var(--ok-txt);}
 .badge-err{background:var(--bad-bg);color:var(--bad-txt);}
 
+.tam-btn{width:46px;height:46px;border-radius:50%;border:2px solid var(--brd);background:#fff;font-size:12px;font-weight:700;color:var(--txt-s);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;}
+.tam-btn.sel{border-color:var(--roxo);background:var(--roxo);color:#fff;}
+.tam-btn:hover:not(.sel){border-color:var(--roxo-cl);color:var(--roxo);}
+
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
@@ -125,8 +129,11 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--lav-l);col
     </div>
     <div class="field">
       <label>Facção</label>
-      <input type="text" id="inp-faccao" placeholder="Ex: CKL, MAXIONY..." list="lista-faccoes" autocomplete="off">
-      <datalist id="lista-faccoes"></datalist>
+      <select id="sel-faccao" onchange="onSelectFaccao(this)" style="width:100%;padding:11px 14px;border:1.5px solid var(--brd);border-radius:10px;font-size:14px;font-family:inherit;outline:none;color:var(--txt);background:#fff;">
+        <option value="">— selecione —</option>
+      </select>
+      <input type="text" id="inp-faccao" placeholder="Digite o nome da facção..." style="display:none;margin-top:6px;" autocomplete="off">
+      <button type="button" onclick="toggleManualFaccao()" id="btn-manual-faccao" style="margin-top:6px;background:none;border:none;color:var(--roxo);font-size:11px;font-weight:700;cursor:pointer;padding:0;">+ Não encontrei na lista, digitar manualmente</button>
     </div>
   </div>
 
@@ -149,24 +156,24 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--lav-l);col
         <input type="text" id="inp-cor" placeholder="Digite a cor manualmente..." style="display:none;margin-top:6px;" autocomplete="off">
         <button type="button" onclick="toggleManualCor()" id="btn-manual-cor" style="margin-top:6px;background:none;border:none;color:var(--roxo);font-size:11px;font-weight:700;cursor:pointer;padding:0;">+ Não encontrei na lista, digitar manualmente</button>
       </div>
-      <div class="field">
+      <div class="field" style="grid-column:1/-1;">
         <label>Tamanho</label>
-        <input type="text" id="inp-tam" placeholder="P, M, G, 38..." list="lista-tamanhos" autocomplete="off">
-        <datalist id="lista-tamanhos">
-          <option value="PP">
-          <option value="P">
-          <option value="M">
-          <option value="G">
-          <option value="GG">
-          <option value="XGG">
-          <option value="32">
-          <option value="34">
-          <option value="36">
-          <option value="38">
-          <option value="40">
-          <option value="42">
-          <option value="UNICO">
-        </datalist>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;" id="tam-grid">
+          <button type="button" class="tam-btn" onclick="selecionarTam('PP')">PP</button>
+          <button type="button" class="tam-btn" onclick="selecionarTam('P')">P</button>
+          <button type="button" class="tam-btn" onclick="selecionarTam('M')">M</button>
+          <button type="button" class="tam-btn" onclick="selecionarTam('G')">G</button>
+          <button type="button" class="tam-btn" onclick="selecionarTam('GG')">GG</button>
+          <button type="button" class="tam-btn" onclick="selecionarTam('XGG')">XGG</button>
+          <button type="button" class="tam-btn" onclick="selecionarTam('32')">32</button>
+          <button type="button" class="tam-btn" onclick="selecionarTam('34')">34</button>
+          <button type="button" class="tam-btn" onclick="selecionarTam('36')">36</button>
+          <button type="button" class="tam-btn" onclick="selecionarTam('38')">38</button>
+          <button type="button" class="tam-btn" onclick="selecionarTam('40')">40</button>
+          <button type="button" class="tam-btn" onclick="selecionarTam('42')">42</button>
+          <button type="button" class="tam-btn" onclick="selecionarTam('UNICO')">ÚN</button>
+        </div>
+        <input type="hidden" id="inp-tam">
       </div>
     </div>
   </div>
@@ -255,7 +262,7 @@ function carregarListas(){
     .then(function(d){
       popularSelect('sel-modelo', d.modelos || []);
       popularSelect('sel-cor',    d.cores   || []);
-      popularDatalist('lista-faccoes', d.faccoes || []);
+      popularSelect('sel-faccao',  d.faccoes || []);
       document.getElementById('statusConn').className = 'status-badge badge-ok';
       document.getElementById('statusConn').textContent = '✅ Conectado';
     })
@@ -276,6 +283,22 @@ function popularDatalist(id, arr){
   var dl = document.getElementById(id);
   if(!dl) return;
   dl.innerHTML = arr.map(function(v){ return '<option value="' + v + '">'; }).join('');
+}
+
+function onSelectFaccao(sel){
+  document.getElementById('inp-faccao').value = sel.value;
+}
+var manualFaccao = false;
+function toggleManualFaccao(){
+  manualFaccao = !manualFaccao;
+  var inp = document.getElementById('inp-faccao');
+  var sel = document.getElementById('sel-faccao');
+  var btn = document.getElementById('btn-manual-faccao');
+  inp.style.display = manualFaccao ? '' : 'none';
+  sel.style.display = manualFaccao ? 'none' : '';
+  btn.textContent = manualFaccao ? '← Voltar para a lista' : '+ Não encontrei na lista, digitar manualmente';
+  if(manualFaccao){ inp.focus(); inp.value=''; }
+  else { inp.value = sel.value; }
 }
 
 var manualModelo = false, manualCor = false;
@@ -310,6 +333,13 @@ function toggleManualCor(){
 }
 
 // ─── TIPO ──────────────────────────────────────────────────
+function selecionarTam(tam){
+  document.getElementById('inp-tam').value = tam;
+  document.querySelectorAll('.tam-btn').forEach(function(b){
+    b.classList.toggle('sel', b.textContent.trim() === tam || (tam==='UNICO' && b.textContent.trim()==='ÚN'));
+  });
+}
+
 function selecionarTipo(tipo){
   tipoSelecionado = tipo;
   ['Estoque Acab.','Revisão','Contagem'].forEach(function(t){
@@ -331,7 +361,7 @@ function mudarAba(aba){
 function registrar(){
   if(!tipoSelecionado){ toast('⚠️ Selecione o tipo de contagem'); return; }
   var os     = document.getElementById('inp-os').value.trim();
-  var faccao = document.getElementById('inp-faccao').value.trim();
+  var faccao = (manualFaccao ? document.getElementById('inp-faccao') : document.getElementById('sel-faccao')).value.trim();
   var modelo = (manualModelo ? document.getElementById('inp-modelo') : document.getElementById('sel-modelo')).value.trim();
   var cor    = (manualCor ? document.getElementById('inp-cor') : document.getElementById('sel-cor')).value.trim();
   var tam    = document.getElementById('inp-tam').value.trim();
@@ -388,7 +418,11 @@ function limparFormulario(){
     document.getElementById(id).value = '';
   });
   document.getElementById('inp-qtd').value = '';
+  // Reset tamanho buttons
+  document.querySelectorAll('.tam-btn').forEach(function(b){ b.classList.remove('sel'); });
+  document.getElementById('inp-tam').value = '';
   // Reset selects
+  var sf = document.getElementById('sel-faccao'); if(sf) sf.value='';
   var sm = document.getElementById('sel-modelo'); if(sm) sm.value='';
   var sc = document.getElementById('sel-cor'); if(sc) sc.value='';
   // Mantém tipo, facção e OS para agilizar lançamentos sequenciais
